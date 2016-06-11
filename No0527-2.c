@@ -12,7 +12,7 @@
 #define STACK_ERROR -1
 
 typedef struct {
-  int data[STACK_SIZE];
+  char data[STACK_SIZE];
   int sp;
 }stack_t;
 
@@ -35,8 +35,8 @@ int rank(char op);
 
 void disp_stack(stack_t stack);
 void push(stack_t *stack, int data);
-int pop(stack_t *stack);
-int peek(stack_t *stack);
+char pop(stack_t *stack);
+char peek(stack_t *stack);
 
 int main(void){
 
@@ -59,6 +59,7 @@ char *to_rpn(char *formula){
   char *rpn = calloc(FORMULA_SIZE*2+1, sizeof(char*));
   int nbuf;
   char target;
+  char pToken;
 
   nbuf = 0;
   while(*formula != '\0'){
@@ -70,14 +71,23 @@ char *to_rpn(char *formula){
         if(!isdigit(*formula))
           rpn[nbuf++] = ',';     /* 数値の次の値が数値ではないなら区切る */
     }
+    else if(target == '('){
+      push(&opstack, target);
+    }
+    else if(target == ')'){
+      while((pToken = pop(&opstack)) != STACK_ERROR && pToken != '('){
+        rpn[nbuf++] = pToken;
+        rpn[nbuf++] = ',';
+      }
+    }
     else if(peek(&opstack) == STACK_ERROR){
       push(&opstack, target);
     }
     else{
       while(peek(&opstack) != STACK_ERROR){
         /* 現在のオペレータの優先度がスタックの一番上の優先度より低い　*/
-        if(rank(target) < rank((char)peek(&opstack))){
-          rpn[nbuf++] = (char)pop(&opstack);
+        if(rank(target) < rank(peek(&opstack))){
+          rpn[nbuf++] = pop(&opstack);
           rpn[nbuf++] = ',';
         }
         else{
@@ -89,7 +99,7 @@ char *to_rpn(char *formula){
   }
 
   while(peek(&opstack) != STACK_ERROR){
-    rpn[nbuf++] = (char)pop(&opstack);
+    rpn[nbuf++] = pop(&opstack);
     rpn[nbuf++] = ',';
   }
   rpn[nbuf] = '\0';
@@ -170,7 +180,7 @@ void push(stack_t *stack, int data){
   }
 }
 
-int pop(stack_t *stack){
+char pop(stack_t *stack){
 
   if(stack->sp > 0){
     stack->sp--;
@@ -182,7 +192,7 @@ int pop(stack_t *stack){
   }
 }
 
-int peek(stack_t *stack){
+char peek(stack_t *stack){
 
   if(stack->sp > 0){
     return stack->data[stack->sp - 1];
